@@ -30,7 +30,7 @@ function osInfo() {
     uptime: os.uptime(),
     platform: os.platform(),
     architecture: os.arch(),
-    cpu: os.cpus()[1].model,
+    cpu: os.cpus()[0].model,
     nr_of_cpu_logical_core: os.cpus().length,
     load_avg: os.loadavg(),
   };
