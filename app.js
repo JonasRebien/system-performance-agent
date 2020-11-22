@@ -1,18 +1,31 @@
-var os = require("os");
-const winos = require("loadavg-windows");
+const os = require("os");
+const Shell = require("node-powershell");
 
-winos.enableCustomLoadavg();
+const ps = new Shell({
+  executionPolicy: "Bypass",
+  noProfile: true,
+});
 
 http = require("http");
 var port = 8585;
 
 http
-  .createServer(function (req, res) {
+  .createServer(async function (req, res) {
     res.writeHeader(200, { "Content-Type": "application/json" });
     switch (req.url) {
       case "/system":
-        console.log('New incoming client request for ' + req.url)
+        console.log("New incoming client request for " + req.url);
         res.write(osInfo());
+        break;
+      case "/cpu":
+        console.log("New incoming client request for " + req.url);
+        let cpu_output = await cpuInfo();
+        res.write(cpu_output);
+        break;
+      case "/services":
+        console.log("New incoming client request for " + req.url);
+        let service_output = await servicesInfo();
+        res.write(service_output);
         break;
       default:
         res.write('{"hello" : "world"}');
@@ -28,14 +41,34 @@ function osInfo() {
     freeMemory_mb: os.freemem() / 1024 / 1024,
     memUsages_percentage: (os.freemem() * 100) / os.totalmem(),
     uptime: os.uptime(),
-    platform: os.platform(),
-    architecture: os.arch(),
     cpu: os.cpus()[0].model,
-    nr_of_cpu_logical_core: os.cpus().length,
-    load_avg: os.loadavg(),
   };
   var output = JSON.stringify(obj);
   return output;
+}
+
+async function servicesInfo() {
+  ps.addCommand("Get-Service | Where-Object {$_.Status -eq 'Running'}");
+  let result;
+  try {
+    result = await ps.invoke();
+  } catch {
+    // do nothing
+  }
+  return result;
+}
+
+async function cpuInfo() {
+  ps.addCommand(
+    "Get-WmiObject Win32_Processor | Measure-Object -Property LoadPercentage -Average | Select Average"
+  );
+  let result;
+  try {
+    result = await ps.invoke();
+  } catch {
+    // do nothing
+  }
+  return result;
 }
 
 function exit(err) {
