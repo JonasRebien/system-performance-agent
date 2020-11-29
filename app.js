@@ -22,10 +22,15 @@ http
         let cpu_output = await cpuInfo();
         res.write(cpu_output);
         break;
-      case "/services":
+      case "/service":
         console.log("New incoming client request for " + req.url);
         let service_output = await servicesInfo();
         res.write(service_output);
+        break;
+      case "/process":
+        console.log("New incoming client request for " + req.url);
+        let process_output = await processInfo();
+        res.write(process_output);
         break;
       default:
         res.write('{"hello" : "world"}');
@@ -61,6 +66,19 @@ async function servicesInfo() {
 async function cpuInfo() {
   ps.addCommand(
     "Get-WmiObject Win32_Processor | Measure-Object -Property LoadPercentage -Average | Select Average"
+  );
+  let result;
+  try {
+    result = await ps.invoke();
+  } catch {
+    // do nothing
+  }
+  return result;
+}
+
+async function processInfo() {
+  ps.addCommand(
+    "Get-Process"
   );
   let result;
   try {
